@@ -156,14 +156,64 @@ export async function testApiConnection(apiConfig: ApiConfig): Promise<string> {
   )
 }
 
+function extractFirstJsonObject(text: string): string {
+  const start = text.indexOf("{")
+  if (start === -1) throw new SyntaxError("未找到 JSON 对象")
+
+  let depth = 0
+  let inString = false
+  let escaped = false
+
+  for (let i = start; i < text.length; i++) {
+    const char = text[i]
+    if (inString) {
+      if (escaped) escaped = false
+      else if (char === "\\") escaped = true
+      else if (char === '"') inString = false
+      continue
+    }
+    if (char === '"') {
+      inString = true
+      continue
+    }
+    if (char === "{") depth++
+    else if (char === "}") {
+      depth--
+      if (depth === 0) return text.slice(start, i + 1)
+    }
+  }
+
+  throw new SyntaxError("JSON 对象不完整")
+}
+
 function parseJsonResponse<T>(raw: string): T {
+  const candidates: string[] = []
   const trimmed = raw.trim()
-  const fenced = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/)
-  let jsonText = fenced ? fenced[1].trim() : trimmed
-  const start = jsonText.indexOf("{")
-  const end = jsonText.lastIndexOf("}")
-  if (start !== -1 && end > start) jsonText = jsonText.slice(start, end + 1)
-  return JSON.parse(jsonText) as T
+  if (trimmed) candidates.push(trimmed)
+
+  const fencedRegex = /```(?:json)?\s*([\s\S]*?)```/gi
+  let match: RegExpExecArray | null
+  while ((match = fencedRegex.exec(raw)) !== null) {
+    const block = match[1].trim()
+    if (block) candidates.push(block)
+  }
+
+  let lastError: unknown
+  for (const candidate of candidates) {
+    try {
+      return JSON.parse(candidate) as T
+    } catch (error) {
+      lastError = error
+      try {
+        return JSON.parse(extractFirstJsonObject(candidate)) as T
+      } catch (innerError) {
+        lastError = innerError
+      }
+    }
+  }
+
+  const message = lastError instanceof Error ? lastError.message : "未知错误"
+  throw new Error(`无法解析模型返回的 JSON：${message}`)
 }
 
 export async function generateScenarioData(

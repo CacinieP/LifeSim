@@ -32,6 +32,36 @@ async function chat(messages, systemPrompt, maxTokens = 256) {
   return (msg?.content || msg?.reasoning || "").trim() || "（无回复）"
 }
 
+function extractFirstJsonObject(text) {
+  const start = text.indexOf("{")
+  if (start === -1) throw new SyntaxError("未找到 JSON 对象")
+
+  let depth = 0
+  let inString = false
+  let escaped = false
+
+  for (let i = start; i < text.length; i++) {
+    const char = text[i]
+    if (inString) {
+      if (escaped) escaped = false
+      else if (char === "\\") escaped = true
+      else if (char === '"') inString = false
+      continue
+    }
+    if (char === '"') {
+      inString = true
+      continue
+    }
+    if (char === "{") depth++
+    else if (char === "}") {
+      depth--
+      if (depth === 0) return text.slice(start, i + 1)
+    }
+  }
+
+  throw new SyntaxError("JSON 对象不完整")
+}
+
 const tests = [
   {
     name: "1. 连接测试 (testApiConnection)",
@@ -72,11 +102,7 @@ const tests = [
         "你是 LifeSim 数据生成器，只输出合法 JSON，不要 markdown。",
         4096,
       )
-      let jsonText = raw.replace(/```json?\s*/g, "").replace(/```/g, "").trim()
-      const start = jsonText.indexOf("{")
-      const end = jsonText.lastIndexOf("}")
-      if (start !== -1 && end > start) jsonText = jsonText.slice(start, end + 1)
-      const data = JSON.parse(jsonText)
+      const data = JSON.parse(extractFirstJsonObject(raw))
       if (!data.branches?.length) throw new Error("JSON 缺少 branches")
       return `生成 ${data.branches.length} 条路径，推荐路线 #${data.recommendation?.primaryId}`
     },
