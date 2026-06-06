@@ -13,15 +13,14 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Skip without token
-        if: ${{ secrets.MODELSCOPE_TOKEN == '' }}
-        run: echo "MODELSCOPE_TOKEN 未配置，跳过自动同步。可在 Settings → Secrets 添加后重试。"
-
       - name: Push to ModelScope Studio
-        if: ${{ secrets.MODELSCOPE_TOKEN != '' }}
         env:
           MODELSCOPE_TOKEN: ${{ secrets.MODELSCOPE_TOKEN }}
         run: |
+          if [ -z "$MODELSCOPE_TOKEN" ]; then
+            echo "MODELSCOPE_TOKEN 未配置，跳过自动同步。"
+            exit 0
+          fi
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git remote add modelscope "https://oauth2:${MODELSCOPE_TOKEN}@www.modelscope.cn/studios/Cacinie/LifeSim.git" || true
