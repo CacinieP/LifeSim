@@ -1,3 +1,4 @@
+import { jsonrepair } from "jsonrepair"
 import type { ApiConfig, ChatMessage, DecisionContext, ScenarioData } from "@/types"
 
 const PROVIDER_ENDPOINTS: Record<string, string> = {
@@ -186,6 +187,24 @@ function extractFirstJsonObject(text: string): string {
   throw new SyntaxError("JSON 对象不完整")
 }
 
+function tryParseJsonText<T>(text: string): T {
+  const attempts: Array<() => T> = [
+    () => JSON.parse(text) as T,
+    () => JSON.parse(jsonrepair(text)) as T,
+  ]
+
+  let lastError: unknown
+  for (const attempt of attempts) {
+    try {
+      return attempt()
+    } catch (error) {
+      lastError = error
+    }
+  }
+
+  throw lastError instanceof Error ? lastError : new SyntaxError("JSON 解析失败")
+}
+
 function parseJsonResponse<T>(raw: string): T {
   const candidates: string[] = []
   const trimmed = raw.trim()
@@ -201,11 +220,11 @@ function parseJsonResponse<T>(raw: string): T {
   let lastError: unknown
   for (const candidate of candidates) {
     try {
-      return JSON.parse(candidate) as T
+      return tryParseJsonText<T>(candidate)
     } catch (error) {
       lastError = error
       try {
-        return JSON.parse(extractFirstJsonObject(candidate)) as T
+        return tryParseJsonText<T>(extractFirstJsonObject(candidate))
       } catch (innerError) {
         lastError = innerError
       }
@@ -214,6 +233,42 @@ function parseJsonResponse<T>(raw: string): T {
 
   const message = lastError instanceof Error ? lastError.message : "未知错误"
   throw new Error(`无法解析模型返回的 JSON：${message}`)
+}
+
+function normalizeScenarioData(data: ScenarioData): ScenarioData {
+  const branches = (data.branches || []).slice(0, 3).map((branch, index) => ({
+    ...branch,
+    id: branch.id ?? index + 1,
+    icon: branch.icon || "🌱",
+    shortDesc: branch.shortDesc || branch.name || `路径 ${index + 1}`,
+    pros: branch.pros || [],
+    cons: branch.cons || [],
+    stages: (branch.stages || []).map((stage) => ({
+      ...stage,
+      actionItems: stage.actionItems || [],
+      choices: (stage.choices || []).slice(0, 3),
+    })),
+    scores: {
+      difficulty: branch.scores?.difficulty ?? 3,
+      satisfaction: branch.scores?.satisfaction ?? 3,
+      risk: branch.scores?.risk ?? 3,
+      growth: branch.scores?.growth ?? 3,
+    },
+  }))
+
+  return {
+    userSummary: data.userSummary || "基于对话整理的用户画像。",
+    researchSummary: data.researchSummary || "结合常见决策因素给出的参考洞察。",
+    branches,
+    recommendation: {
+      primaryId: data.recommendation?.primaryId ?? branches[0]?.id ?? 1,
+      reasoning: data.recommendation?.reasoning || "综合各路径特点后的建议。",
+      tips: data.recommendation?.tips || [],
+      actionChecklist: data.recommendation?.actionChecklist || [],
+      pitfalls: data.recommendation?.pitfalls || [],
+    },
+    disclaimer: data.disclaimer || "本推演仅供参考，不构成专业建议。",
+  }
 }
 
 export async function generateScenarioData(
@@ -232,11 +287,13 @@ export async function generateScenarioData(
   const systemPrompt = [
     "你是 LifeSim 人生模拟器的数据生成器。",
     "根据对话与背景信息，生成 3 条不同的人生路径推演数据。",
-    "只输出合法 JSON，不要使用 markdown 代码块。",
+    "只输出一个合法 JSON 对象，不要使用 markdown 代码块，不要输出任何解释文字。",
+    "字符串内不要换行；数组元素之间必须有逗号；不要使用尾随逗号。",
     "JSON 结构必须包含：userSummary, researchSummary, branches(3条), recommendation, disclaimer。",
-    "每条 branch 需含 id(1-3), name, icon(单个emoji), shortDesc, stages(每条约3个阶段), bestCase, worstCase, mostLikely, pros, cons, scores(difficulty/satisfaction/risk/growth 均为1-5整数)。",
-    "每个 stage 需含 stage, period, scene, actionItems, milestone, choices(每阶段3个，含 text/personality/strategy)。",
-    "recommendation 需含 primaryId, reasoning, tips, actionChecklist, pitfalls。",
+    "每条 branch 含 id(1-3), name, icon(单个emoji), shortDesc, stages(每条约2个阶段), bestCase, worstCase, mostLikely, pros, cons, scores(difficulty/satisfaction/risk/growth 均为1-5整数)。",
+    "每个 stage 含 stage, period, scene(不超过80字), actionItems(2条), milestone, choices(每阶段3个，含 text/personality/strategy)。",
+    "recommendation 含 primaryId, reasoning, tips(3条), actionChecklist(3条), pitfalls(3条)。",
+    "所有字段尽量简短，确保 JSON 完整闭合。",
   ].join("\n")
 
   const transcript = chatHistory.map((m) => `${m.role === "user" ? "用户" : "未来"}：${m.content}`).join("\n")
@@ -246,6 +303,38 @@ export async function generateScenarioData(
     "请生成完整推演 JSON。",
   ].filter(Boolean).join("\n\n")
 
-  const raw = await chatCompletion(apiConfig, [{ role: "user", content: userContent }], systemPrompt, 4096)
-  return parseJsonResponse<ScenarioData>(raw)
+  const parseScenario = (raw: string) => normalizeScenarioData(parseJsonResponse<ScenarioData>(raw))
+
+  const raw = await chatCompletion(apiConfig, [{ role: "user", content: userContent }], systemPrompt, 8192)
+  try {
+    return parseScenario(raw)
+  } catch (firstError) {
+    const brokenJson = (() => {
+      try {
+        return extractFirstJsonObject(raw)
+      } catch {
+        return raw.slice(0, 12000)
+      }
+    })()
+
+    const fixed = await chatCompletion(
+      apiConfig,
+      [{
+        role: "user",
+        content: [
+          "以下 JSON 存在语法错误，请修复后只输出完整合法的 JSON 对象，不要 markdown，不要解释：",
+          brokenJson,
+        ].join("\n\n"),
+      }],
+      "你是 JSON 修复器。修复缺失逗号、尾随逗号、未转义换行等问题，保持原有数据结构。",
+      8192,
+    )
+
+    try {
+      return parseScenario(fixed)
+    } catch {
+      const message = firstError instanceof Error ? firstError.message : "推演 JSON 解析失败"
+      throw new Error(message)
+    }
+  }
 }

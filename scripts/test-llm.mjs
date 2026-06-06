@@ -1,3 +1,5 @@
+import { jsonrepair } from "jsonrepair"
+
 const API_KEY = process.env.STEPFUN_API_KEY
 const ENDPOINT = (process.env.STEPFUN_ENDPOINT || "https://api.stepfun.com/v1").replace(/\/$/, "")
 const MODEL = process.env.STEPFUN_MODEL || "step-3.7-flash"
@@ -102,7 +104,13 @@ const tests = [
         "你是 LifeSim 数据生成器，只输出合法 JSON，不要 markdown。",
         4096,
       )
-      const data = JSON.parse(extractFirstJsonObject(raw))
+      const jsonText = extractFirstJsonObject(raw)
+      let data
+      try {
+        data = JSON.parse(jsonText)
+      } catch {
+        data = JSON.parse(jsonrepair(jsonText))
+      }
       if (!data.branches?.length) throw new Error("JSON 缺少 branches")
       return `生成 ${data.branches.length} 条路径，推荐路线 #${data.recommendation?.primaryId}`
     },
