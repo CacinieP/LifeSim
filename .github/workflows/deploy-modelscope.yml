@@ -13,17 +13,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-
-      - name: Build frontend for ModelScope
-        run: |
-          npm ci
-          MODELSCOPE=true npm run build
-          test -f dist/index.html
-
       - name: Push to ModelScope Studio
         env:
           MODELSCOPE_TOKEN: ${{ secrets.MODELSCOPE_TOKEN }}
@@ -34,14 +23,10 @@ jobs:
           fi
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add -f dist README.md
-          if ! git diff --staged --quiet; then
-            git commit -m "chore: bundle dist for ModelScope studio runtime [skip ci]"
-          fi
+          chmod +x start.sh
           git remote add modelscope "https://oauth2:${MODELSCOPE_TOKEN}@www.modelscope.cn/studios/Cacinie/LifeSim.git" || true
           git fetch modelscope master
           git push modelscope HEAD:master
           curl -s -X POST "https://modelscope.cn/openapi/v1/studios/Cacinie/LifeSim/deploy" \
             -H "Authorization: Bearer ${MODELSCOPE_TOKEN}" \
             -H "Content-Type: application/json"
-

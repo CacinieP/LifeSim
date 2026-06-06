@@ -1,4 +1,4 @@
-"""本地 / Docker 部署用静态服务。魔搭创空间请使用 README 中的 static SDK 配置。"""
+"""FastAPI 静态服务，供魔搭 Docker 创空间在 7860 端口托管前端。"""
 
 import os
 from pathlib import Path

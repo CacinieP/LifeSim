@@ -3,8 +3,8 @@ import react from "@vitejs/plugin-react"
 import path from "path"
 
 export default defineConfig({
-  // 魔搭 static 托管在子路径下，必须用相对路径，否则 /assets 会 404 白屏
-  base: process.env.MODELSCOPE === "true" ? "./" : process.env.GITHUB_PAGES === "true" ? "/LifeSim/" : "/",
+  // 魔搭 Docker 由 FastAPI 在根路径托管，使用绝对路径 /assets
+  base: process.env.MODELSCOPE === "true" ? "/" : process.env.GITHUB_PAGES === "true" ? "/LifeSim/" : "/",
   plugins: [react()],
   resolve: {
     alias: {

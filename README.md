@@ -3,8 +3,9 @@ title: LifeSim - 人生模拟器
 emoji: 🎯
 colorFrom: indigo
 colorTo: blue
-sdk: static
-app_file: dist/index.html
+sdk: docker
+app_file: start.sh
+app_port: 7860
 pinned: false
 license: apache-2.0
 short_description: AI 驱动的重大人生决策辅助工具，支持对话推演与场景可视化
@@ -35,26 +36,18 @@ npm run dev
 
 ## 创空间部署
 
-按魔搭官方 [ModelScope-Studio 技能](https://modelscope.cn/skills/modelscope/ModelScope-Studio) 使用 **Static** 模式：
+使用 **Docker** 模式（见 [Docker 创空间文档](https://modelscope.cn/docs/studios/docker) 与 [ModelScope-Studio 技能](https://modelscope.cn/skills/modelscope/ModelScope-Studio)）：
 
-| 要点 | 说明 |
+| 文件 | 作用 |
 |------|------|
-| 无云端构建 | Static **不会**在平台执行 `npm run build`，通常也**没有构建日志** |
-| 本地构建 | 必须把 `dist/` 提交进创空间 Git 仓库 |
-| 推送后部署 | 代码 push 后需调用 **部署/上线**（`deployStudio`），仅刷新页面不够 |
-| 资源路径 | 构建时设 `MODELSCOPE=true`，生成相对路径 `./assets/...`，避免白屏 |
+| `Dockerfile` | 多阶段构建：Node 编译前端 + Python/FastAPI 在 **7860** 端口托管 |
+| `docker.yaml` | 指定 Docker 构建入口 |
+| `app.py` / `start.sh` | 容器启动命令 |
 
-```bash
-npm ci
-# Windows: set MODELSCOPE=true
-# Linux/macOS: export MODELSCOPE=true
-npm run build
-git add -f dist README.md
-git commit -m "chore: update dist for ModelScope"
-git push modelscope master
-# 然后在创空间设置里点「部署」或「上线创空间」
+推送代码后必须 **触发部署**（设置里点「部署」，或调用 deploy API），然后在 **构建日志** 中确认 `docker build` 成功。
+
+```powershell
+.\scripts\deploy-modelscope.ps1 -Token <你的魔搭Token>
 ```
 
-也可运行 `.\scripts\deploy-modelscope.ps1 -Token <你的Token>`（会 push 并尝试触发部署 API）。
-
-> 若希望平台自动 `npm build`，可改用 `sdk: docker`（需阿里云实名认证），见[Docker 创空间文档](https://modelscope.cn/docs/studios/docker)。
+> Docker 模式需完成魔搭平台阿里云账号绑定与实名认证。首次构建约 3–5 分钟。
