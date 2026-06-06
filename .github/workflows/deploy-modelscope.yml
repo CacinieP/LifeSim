@@ -1,0 +1,23 @@
+name: Deploy to ModelScope
+
+on:
+  push:
+    branches: [master, main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Push to ModelScope Studio
+        env:
+          MODELSCOPE_TOKEN: ${{ secrets.MODELSCOPE_TOKEN }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git remote add modelscope "https://oauth2:${MODELSCOPE_TOKEN}@www.modelscope.cn/studios/Cacinie/LifeSim.git" || true
+          git push modelscope HEAD:master --force
