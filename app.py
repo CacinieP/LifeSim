@@ -1,3 +1,5 @@
+"""本地 / Docker 部署用静态服务。魔搭创空间请使用 README 中的 static SDK 配置。"""
+
 import os
 from pathlib import Path
 

@@ -3,9 +3,9 @@ title: LifeSim - 人生模拟器
 emoji: 🎯
 colorFrom: indigo
 colorTo: blue
-sdk: docker
-app_file: start.sh
-app_port: 7860
+sdk: static
+app_build_command: npm ci && MODELSCOPE=true npm run build
+app_file: dist/index.html
 pinned: false
 license: apache-2.0
 short_description: AI 驱动的重大人生决策辅助工具，支持对话推演与场景可视化
@@ -36,10 +36,12 @@ npm run dev
 
 ## 创空间部署
 
-本仓库使用 Docker 模式部署到魔搭创空间：
+本仓库使用 **Static 静态模式**部署到魔搭创空间（见 [快速创建文档](https://www.modelscope.cn/docs/studios/quick-create)）：
 
-- `docker.yaml`：指定 `Dockerfile` 构建入口
-- `Dockerfile`：构建前端静态资源并通过 FastAPI 在 7860 端口提供服务
-- `app.py`：静态资源与 SPA 路由服务
+- README 顶部 YAML：`sdk: static` + `app_build_command` + `app_file`
+- 推送后平台会自动执行 `npm ci && MODELSCOPE=true npm run build`，并托管 `dist/index.html`
+- 仓库内已预置 `dist/` 作为构建失败时的兜底
 
-推送代码后，在创空间页面点击「重启空间展示」即可生效。
+推送代码后，在创空间页面点击 **「重启空间展示」** 或 **「部署」**，等待构建日志出现 `npm run build` 完成后再访问。
+
+若创空间设置里 SDK 类型仍为 Docker，请在 **设置** 中改为与 README 一致的 **Static**，或重新创建创空间并选择静态网页类型。

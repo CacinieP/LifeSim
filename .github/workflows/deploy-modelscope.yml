@@ -1,45 +1,45 @@
-name: Deploy to ModelScope
-
-on:
-  push:
-    branches: [master, main]
-  workflow_dispatch:
-
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-
-      - name: Build frontend for ModelScope
-        run: |
-          npm ci
-          MODELSCOPE=true npm run build
-          test -f dist/index.html
-
-      - name: Push to ModelScope Studio
-        env:
-          MODELSCOPE_TOKEN: ${{ secrets.MODELSCOPE_TOKEN }}
-        run: |
-          if [ -z "$MODELSCOPE_TOKEN" ]; then
-            echo "MODELSCOPE_TOKEN 未配置，跳过自动同步。"
-            exit 0
-          fi
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          chmod +x start.sh
-          git add -f dist start.sh
-          if ! git diff --staged --quiet; then
-            git commit -m "chore: bundle dist for ModelScope studio runtime [skip ci]"
-          fi
-          git remote add modelscope "https://oauth2:${MODELSCOPE_TOKEN}@www.modelscope.cn/studios/Cacinie/LifeSim.git" || true
-          git fetch modelscope master
-          git push modelscope HEAD:master
+name: Deploy to ModelScope
+
+on:
+  push:
+    branches: [master, main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Build frontend for ModelScope
+        run: |
+          npm ci
+          MODELSCOPE=true npm run build
+          test -f dist/index.html
+
+      - name: Push to ModelScope Studio
+        env:
+          MODELSCOPE_TOKEN: ${{ secrets.MODELSCOPE_TOKEN }}
+        run: |
+          if [ -z "$MODELSCOPE_TOKEN" ]; then
+            echo "MODELSCOPE_TOKEN 未配置，跳过自动同步。"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          chmod +x start.sh
+          git add -f dist README.md
+          if ! git diff --staged --quiet; then
+            git commit -m "chore: bundle dist for ModelScope studio runtime [skip ci]"
+          fi
+          git remote add modelscope "https://oauth2:${MODELSCOPE_TOKEN}@www.modelscope.cn/studios/Cacinie/LifeSim.git" || true
+          git fetch modelscope master
+          git push modelscope HEAD:master
 

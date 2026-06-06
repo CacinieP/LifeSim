@@ -13,8 +13,7 @@ FROM python:3.10-slim
 
 WORKDIR /app
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir fastapi==0.115.6 "uvicorn[standard]==0.32.1"
 
 COPY app.py start.sh ./
 COPY --from=frontend-builder /app/dist ./dist
