@@ -1,73 +1,45 @@
-# React + TypeScript + Vite
+---
+title: LifeSim - 人生模拟器
+emoji: 🎯
+colorFrom: indigo
+colorTo: blue
+sdk: docker
+app_file: app.py
+app_port: 7860
+pinned: false
+license: mit
+short_description: AI 驱动的重大人生决策辅助工具，支持对话推演与场景可视化
+tags:
+  - life-simulation
+  - decision-making
+  - llm
+  - react
+---
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+# LifeSim - 人生模拟器
 
-Currently, two official plugins are available:
+AI 驱动的重大人生决策辅助工具。通过与大模型对话，梳理决策背景，并生成多分支人生推演与场景可视化。
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## 功能
 
-## React Compiler
+- 配置 LLM 提供商与模型（默认阶跃星辰 StepFun）
+- 对话式收集决策背景与约束
+- 自动生成多场景推演数据
+- 可选接入阶跃星辰生图，为场景生成配图
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## 本地开发
 
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## 创空间部署
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+本仓库使用 Docker 模式部署到魔搭创空间：
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+- `docker.yaml`：指定 `Dockerfile` 构建入口
+- `Dockerfile`：构建前端静态资源并通过 FastAPI 在 7860 端口提供服务
+- `app.py`：静态资源与 SPA 路由服务
+
+推送代码后，在创空间页面点击「重启空间展示」即可生效。
