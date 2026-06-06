@@ -87,6 +87,66 @@ export async function chatCompletion(
   return content || reasoning || "（模型未返回内容）"
 }
 
+function getImageApiKey(apiConfig: ApiConfig): string {
+  return apiConfig.imageApiKey.trim() || apiConfig.apiKey.trim()
+}
+
+function getImageEndpoint(apiConfig: ApiConfig): string {
+  if (apiConfig.imageProvider === "stepfun") return "https://api.stepfun.com/v1"
+  return getApiBaseUrl(apiConfig)
+}
+
+interface ImageGenerationResponse {
+  data?: Array<{ url?: string; b64_json?: string }>
+  error?: { message?: string }
+}
+
+export async function generateImage(apiConfig: ApiConfig, prompt: string): Promise<string> {
+  if (apiConfig.imageProvider === "none") throw new Error("未启用图像生成")
+
+  const apiKey = getImageApiKey(apiConfig)
+  const baseUrl = getImageEndpoint(apiConfig)
+  if (!apiKey) throw new Error("请配置图像生成 API Key")
+  if (!baseUrl) throw new Error("请配置图像生成端点")
+  if (!apiConfig.imageModelName.trim()) throw new Error("请配置图像生成模型")
+
+  const model = apiConfig.imageModelName.trim()
+  const body: Record<string, unknown> = {
+    model,
+    prompt: prompt.slice(0, 500),
+    response_format: "url",
+    size: "1024x1024",
+    n: 1,
+  }
+
+  if (model === "step-image-edit-2") {
+    body.cfg_scale = 1.0
+    body.steps = 8
+  } else {
+    body.cfg_scale = 7.5
+    body.steps = 50
+  }
+
+  const response = await fetch(`${baseUrl}/images/generations`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify(body),
+  })
+
+  const data = (await response.json()) as ImageGenerationResponse
+  if (!response.ok) {
+    throw new Error(data.error?.message || `图像生成失败 (${response.status})`)
+  }
+
+  const item = data.data?.[0]
+  if (item?.url) return item.url
+  if (item?.b64_json) return `data:image/png;base64,${item.b64_json}`
+  throw new Error("图像生成未返回结果")
+}
+
 export async function testApiConnection(apiConfig: ApiConfig): Promise<string> {
   return chatCompletion(
     apiConfig,

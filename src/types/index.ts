@@ -2,6 +2,8 @@ export type Screen = "welcome" | "chat" | "result" | "story" | "report"
 
 export type Provider = "deepseek" | "openai" | "moonshot" | "zhipu" | "wanjie" | "stepfun" | "custom"
 
+export type ImageProvider = "none" | "stepfun"
+
 export type DecisionType = "gaokao" | "graduate" | "job" | "career" | "city" | "other"
 
 export interface ApiConfig {
@@ -9,6 +11,8 @@ export interface ApiConfig {
   apiKey: string
   modelName: string
   customEndpoint: string
+  imageProvider: ImageProvider
+  imageModelName: string
   imageApiKey: string
 }
 

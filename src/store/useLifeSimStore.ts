@@ -8,6 +8,8 @@ const defaultApiConfig: ApiConfig = {
   apiKey: "",
   modelName: "step-3.7-flash",
   customEndpoint: "https://api.stepfun.com/v1",
+  imageProvider: "stepfun",
+  imageModelName: "step-image-edit-2",
   imageApiKey: "",
 }
 

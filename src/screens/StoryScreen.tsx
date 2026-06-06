@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { ArrowLeft, Clock, MapPin, CheckCircle2, ChevronUp, ChevronDown, SkipForward, FileText, GitFork, Target, ListTodo } from "lucide-react"
 import { useLifeSimStore } from "@/store/useLifeSimStore"
+import { generateImage } from "@/lib/api"
 
 const easeSmooth = [0.16, 1, 0.3, 1] as [number, number, number, number]
 
@@ -13,6 +14,9 @@ export default function StoryScreen() {
   const [showMeta, setShowMeta] = useState(false)
   const [isComplete, setIsComplete] = useState(false)
   const [imageLoaded, setImageLoaded] = useState(false)
+  const [stageImageUrl, setStageImageUrl] = useState<string | null>(null)
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false)
+  const imageCacheRef = useRef<Record<string, string>>({})
   const typingRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const textContainerRef = useRef<HTMLDivElement>(null)
 
@@ -26,7 +30,50 @@ export default function StoryScreen() {
 
   useEffect(() => {
     if (!currentStage) return
-    setDisplayText(""); setShowChoices(false); setShowMeta(false); setIsComplete(false); setImageLoaded(false)
+
+    const cacheKey = `${store.story.currentBranchId}-${store.story.currentStageIndex}`
+    setStageImageUrl(null)
+    setImageLoaded(false)
+
+    if (currentStage.imageUrl) {
+      setStageImageUrl(currentStage.imageUrl)
+      return
+    }
+
+    if (imageCacheRef.current[cacheKey]) {
+      setStageImageUrl(imageCacheRef.current[cacheKey])
+      return
+    }
+
+    const { apiConfig } = store
+    if (apiConfig.imageProvider === "none") return
+
+    const apiKey = apiConfig.imageApiKey.trim() || apiConfig.apiKey.trim()
+    if (!apiKey) return
+
+    let cancelled = false
+    setIsGeneratingImage(true)
+
+    const prompt = `写实电影感插画，${currentStage.stage}，${currentStage.scene.slice(0, 180)}`
+    void generateImage(apiConfig, prompt)
+      .then((url) => {
+        if (cancelled) return
+        imageCacheRef.current[cacheKey] = url
+        setStageImageUrl(url)
+      })
+      .catch(() => {
+        if (!cancelled) setStageImageUrl(null)
+      })
+      .finally(() => {
+        if (!cancelled) setIsGeneratingImage(false)
+      })
+
+    return () => { cancelled = true }
+  }, [currentStage, store.story.currentBranchId, store.story.currentStageIndex, store.apiConfig])
+
+  useEffect(() => {
+    if (!currentStage) return
+    setDisplayText(""); setShowChoices(false); setShowMeta(false); setIsComplete(false)
     let index = 0
     const type = () => {
       if (index < currentStage.scene.length) {
@@ -73,8 +120,13 @@ export default function StoryScreen() {
         <AnimatePresence mode="wait">
           <motion.div key={`cg-${store.story.currentBranchId}-${store.story.currentStageIndex}`} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.98 }} transition={{ duration: 0.5, ease: easeSmooth }}
             className="relative w-full max-w-[900px] aspect-video rounded-2xl overflow-hidden shadow-2xl shadow-black/50">
-            {!imageLoaded && <div className="absolute inset-0 shimmer" />}
-            {currentStage?.imageUrl && <img src={currentStage.imageUrl} alt={currentStage.stage} className="w-full h-full object-cover" onLoad={() => setImageLoaded(true)} />}
+            {(isGeneratingImage || (stageImageUrl && !imageLoaded)) && <div className="absolute inset-0 shimmer" />}
+            {isGeneratingImage && !stageImageUrl && (
+              <div className="absolute inset-0 flex items-center justify-center text-xs text-text-muted">正在生成场景图...</div>
+            )}
+            {stageImageUrl && (
+              <img src={stageImageUrl} alt={currentStage.stage} className="w-full h-full object-cover" onLoad={() => setImageLoaded(true)} />
+            )}
             <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-background/60 to-transparent" />
           </motion.div>
         </AnimatePresence>

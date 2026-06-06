@@ -31,3 +31,18 @@ export const defaultModels: Record<string, string> = {
 export const defaultEndpoints: Record<string, string> = {
   stepfun: "https://api.stepfun.com/v1",
 }
+
+export const imageProviderOptions = [
+  { value: "none", label: "不生成场景图" },
+  { value: "stepfun", label: "阶跃星辰 (StepFun)" },
+]
+
+export const imageModelOptions = [
+  { value: "step-image-edit-2", label: "step-image-edit-2（轻量快速）" },
+  { value: "step-2x-large", label: "step-2x-large（高质量）" },
+  { value: "step-1x-medium", label: "step-1x-medium（经典文生图）" },
+]
+
+export const defaultImageModels: Record<string, string> = {
+  stepfun: "step-image-edit-2",
+}
