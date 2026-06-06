@@ -74,14 +74,16 @@ export default function WelcomeScreen() {
 
   return (
     <div className="relative min-h-screen flex items-center justify-center px-4 py-12 overflow-hidden">
-      <div className="absolute inset-0 z-0 pointer-events-none bg-gradient-to-b from-background/60 via-background/80 to-background" />
+      <div className="absolute inset-0 z-0 pointer-events-none">
+        <img src={`${import.meta.env.BASE_URL}images/welcome-bg.jpg`} alt="" className="w-full h-full object-cover opacity-30" />
+        <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-background/80 to-background" />
+      </div>
       <div className="pointer-events-none absolute inset-0 z-0 opacity-10" style={{ background: "linear-gradient(135deg, #1E3A5F 0%, #3B6FAB 25%, #6366F1 50%, #3B6FAB 75%, #1E3A5F 100%)", backgroundSize: "200% 200%", animation: "liquid-flow 20s ease-in-out infinite" }} />
 
       <motion.div className="relative z-10 w-full max-w-[520px]" initial="hidden" animate="visible" variants={{ hidden: { opacity: 0 }, visible: { opacity: 1, transition: { staggerChildren: 0.1, delayChildren: 0.1 } } }}>
         <motion.div variants={itemVariants} className="text-center mb-8">
-          <div className="relative mx-auto mb-4 flex items-center justify-center gap-3">
-            <Sparkles className="w-10 h-10 text-accent" />
-            <h1 className="text-4xl font-bold tracking-tight text-text-primary">LifeSim</h1>
+          <div className="relative w-96 h-36 mx-auto mb-4">
+            <img src={`${import.meta.env.BASE_URL}images/lifesim-logo.png`} alt="LifeSim" className="w-full h-full object-contain" />
           </div>
           <p className="text-text-secondary text-sm">AI 驱动的重大人生决策辅助工具</p>
         </motion.div>
