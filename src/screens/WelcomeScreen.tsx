@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom"
 import { motion } from "framer-motion"
 import { ChevronDown, Upload, FileText, X, Sparkles, GraduationCap, Briefcase, Building2, ArrowRight, Eye, EyeOff } from "lucide-react"
 import { useLifeSimStore } from "@/store/useLifeSimStore"
-import { decisionTypeOptions, providerOptions, defaultModels, defaultEndpoints } from "@/lib/config"
+import { decisionTypeOptions, providerOptions, defaultModels, defaultEndpoints, imageProviderOptions, imageModelOptions, defaultImageModels } from "@/lib/config"
 import { testApiConnection } from "@/lib/api"
 
 const itemVariants = {
@@ -195,15 +195,59 @@ export default function WelcomeScreen() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-sm font-medium text-text-secondary">图像生成 Key（可选）</label>
+                <label className="text-sm font-medium text-text-secondary">场景图生成</label>
                 <div className="relative">
-                  <input type={showImageKey ? "text" : "password"} value={apiConfig.imageApiKey} onChange={(e) => setApiConfig({ imageApiKey: e.target.value })} placeholder="通义万相 API Key"
-                    className="w-full h-11 px-4 pr-10 rounded-xl bg-white border border-border text-black text-sm placeholder:text-black/50 focus:border-accent focus:ring-2 focus:ring-accent/20 outline-none transition-all" />
-                  <button type="button" onClick={() => setShowImageKey(!showImageKey)} className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-secondary transition-colors">
-                    {showImageKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
+                  <select
+                    value={apiConfig.imageProvider}
+                    onChange={(e) => {
+                      const provider = e.target.value as typeof apiConfig.imageProvider
+                      setApiConfig({
+                        imageProvider: provider,
+                        imageModelName: defaultImageModels[provider] || apiConfig.imageModelName,
+                      })
+                    }}
+                    className="w-full h-11 px-4 pr-10 rounded-xl bg-white border border-border text-black text-sm appearance-none focus:border-accent focus:ring-2 focus:ring-accent/20 outline-none transition-all"
+                  >
+                    {imageProviderOptions.map((opt) => <option key={opt.value} value={opt.value} className="text-black bg-white">{opt.label}</option>)}
+                  </select>
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted pointer-events-none" />
                 </div>
               </div>
+
+              {apiConfig.imageProvider === "stepfun" && (
+                <>
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-medium text-text-secondary">生图模型</label>
+                    <div className="relative">
+                      <select
+                        value={apiConfig.imageModelName}
+                        onChange={(e) => setApiConfig({ imageModelName: e.target.value })}
+                        className="w-full h-11 px-4 pr-10 rounded-xl bg-white border border-border text-black text-sm appearance-none focus:border-accent focus:ring-2 focus:ring-accent/20 outline-none transition-all"
+                      >
+                        {imageModelOptions.map((opt) => <option key={opt.value} value={opt.value} className="text-black bg-white">{opt.label}</option>)}
+                      </select>
+                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted pointer-events-none" />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-medium text-text-secondary">生图 API Key（可选）</label>
+                    <div className="relative">
+                      <input
+                        type={showImageKey ? "text" : "password"}
+                        value={apiConfig.imageApiKey}
+                        onChange={(e) => setApiConfig({ imageApiKey: e.target.value })}
+                        placeholder="留空则使用上方 API Key"
+                        className="w-full h-11 px-4 pr-10 rounded-xl bg-white border border-border text-black text-sm placeholder:text-black/50 focus:border-accent focus:ring-2 focus:ring-accent/20 outline-none transition-all"
+                      />
+                      <button type="button" onClick={() => setShowImageKey(!showImageKey)} className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-secondary transition-colors">
+                        {showImageKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                    <p className="text-xs text-text-muted">使用阶跃星辰 {apiConfig.imageModelName} 为故事场景生成配图</p>
+                  </div>
+                </>
+              )}
             </div>
           </motion.div>
 
@@ -213,8 +257,6 @@ export default function WelcomeScreen() {
             {isLoading ? <div className="w-5 h-5 border-2 border-[#E2E8F0]/30 border-t-[#E2E8F0] rounded-full animate-spin" /> : <><Sparkles className="w-4 h-4" />开始探索<ArrowRight className="w-4 h-4" /></>}
           </motion.button>
         </motion.div>
-
-        <motion.p variants={itemVariants} className="text-center text-xs text-text-muted mt-6">LifeSim v2.0 · 纯前端实现，数据仅存储在本地</motion.p>
       </motion.div>
     </div>
   )
