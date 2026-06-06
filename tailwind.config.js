@@ -5,11 +5,21 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        border: "hsl(var(--border))",
+        border: "var(--border)",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
-        background: "hsl(var(--background))",
+        background: "var(--background)",
         foreground: "hsl(var(--foreground))",
+        "text-primary": "var(--text-primary)",
+        "text-secondary": "var(--text-secondary)",
+        "text-muted": "var(--text-muted)",
+        "background-secondary": "var(--background-secondary)",
+        "background-card": "var(--background-card)",
+        "background-elevated": "var(--background-elevated)",
+        "border-focus": "var(--border-focus)",
+        success: "var(--success)",
+        warning: "var(--warning)",
+        danger: "var(--danger)",
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
@@ -27,7 +37,8 @@ module.exports = {
           foreground: "hsl(var(--muted-foreground))",
         },
         accent: {
-          DEFAULT: "hsl(var(--accent))",
+          DEFAULT: "var(--accent)",
+          hover: "var(--accent-hover)",
           foreground: "hsl(var(--accent-foreground))",
         },
         popover: {

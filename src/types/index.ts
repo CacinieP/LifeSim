@@ -1,6 +1,6 @@
 export type Screen = "welcome" | "chat" | "result" | "story" | "report"
 
-export type Provider = "deepseek" | "openai" | "moonshot" | "zhipu" | "wanjie" | "custom"
+export type Provider = "deepseek" | "openai" | "moonshot" | "zhipu" | "wanjie" | "stepfun" | "custom"
 
 export type DecisionType = "gaokao" | "graduate" | "job" | "career" | "city" | "other"
 

@@ -178,6 +178,6 @@ export default function DimensionalGridTunnel() {
   }, [])
 
   return (
-    <div ref={containerRef} style={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%", zIndex: 0, background: "#06060D" }} />
+    <div ref={containerRef} style={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%", zIndex: 0, background: "#06060D", pointerEvents: "none" }} />
   )
 }

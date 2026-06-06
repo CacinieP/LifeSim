@@ -4,10 +4,10 @@ import { create } from "zustand"
 import type { LifeSimStore, ApiConfig, DecisionContext, DecisionType, Screen, ChatMessage, ScenarioData, StoryHistoryEntry } from "@/types"
 
 const defaultApiConfig: ApiConfig = {
-  provider: "deepseek",
+  provider: "stepfun",
   apiKey: "",
-  modelName: "deepseek-chat",
-  customEndpoint: "",
+  modelName: "step-3.7-flash",
+  customEndpoint: "https://api.stepfun.com/v1",
   imageApiKey: "",
 }
 
