@@ -125,4 +125,5 @@ export interface LifeSimStore {
   completeBranch: (branchId: number) => void
   switchScreen: (screen: Screen) => void
   reset: () => void
+  resetSession: () => void
 }

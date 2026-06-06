@@ -114,4 +114,19 @@ export const useLifeSimStore = create<LifeSimStore>((set) => ({
   switchScreen: (screen) => set({ currentScreen: screen }),
 
   reset: () => set(initialState),
+
+  resetSession: () =>
+    set((state) => ({
+      chatHistory: [],
+      isChatLoading: false,
+      showSimulateButton: false,
+      scenarioData: null,
+      isSimulating: false,
+      story: { ...initialState.story },
+      currentScreen: "welcome" as Screen,
+      apiConfig: state.apiConfig,
+      decisionContext: state.decisionContext,
+      profileFileName: state.profileFileName,
+      profileFileContent: state.profileFileContent,
+    })),
 }))

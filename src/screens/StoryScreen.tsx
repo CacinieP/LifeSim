@@ -2,12 +2,14 @@ import { useState, useEffect, useRef, useCallback } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { ArrowLeft, Clock, MapPin, CheckCircle2, ChevronUp, ChevronDown, SkipForward, FileText, GitFork, Target, ListTodo } from "lucide-react"
 import { useLifeSimStore } from "@/store/useLifeSimStore"
+import { useLifeSimNavigation } from "@/hooks/useLifeSimNavigation"
 import { generateImage } from "@/lib/api"
 
 const easeSmooth = [0.16, 1, 0.3, 1] as [number, number, number, number]
 
 export default function StoryScreen() {
   const store = useLifeSimStore()
+  const { goTo, startStory } = useLifeSimNavigation()
   const [displayText, setDisplayText] = useState("")
   const [isTimelineOpen, setIsTimelineOpen] = useState(false)
   const [showChoices, setShowChoices] = useState(false)
@@ -20,13 +22,11 @@ export default function StoryScreen() {
   const typingRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const textContainerRef = useRef<HTMLDivElement>(null)
 
-  if (!store.scenarioData || store.story.currentBranchId === null)
-    return <div className="min-h-screen flex items-center justify-center bg-background"><div className="text-text-secondary">请先选择一条路径</div></div>
-
-  const branch = store.scenarioData.branches.find((b) => b.id === store.story.currentBranchId)
-  if (!branch) return null
-  const currentStage = branch.stages[store.story.currentStageIndex]
-  const isLastStage = store.story.currentStageIndex >= branch.stages.length - 1
+  const scenarioData = store.scenarioData
+  const branchId = store.story.currentBranchId
+  const branch = scenarioData?.branches.find((b) => b.id === branchId)
+  const currentStage = branch?.stages[store.story.currentStageIndex]
+  const isLastStage = branch ? store.story.currentStageIndex >= branch.stages.length - 1 : false
 
   useEffect(() => {
     if (!currentStage) return
@@ -73,38 +73,87 @@ export default function StoryScreen() {
 
   useEffect(() => {
     if (!currentStage) return
-    setDisplayText(""); setShowChoices(false); setShowMeta(false); setIsComplete(false)
+    setDisplayText("")
+    setShowChoices(false)
+    setShowMeta(false)
+    setIsComplete(false)
     let index = 0
     const type = () => {
       if (index < currentStage.scene.length) {
         setDisplayText(currentStage.scene.slice(0, index + 1))
         index++
         typingRef.current = setTimeout(type, 30)
-      } else { setShowMeta(true); setTimeout(() => setShowChoices(true), 300) }
+      } else {
+        setShowMeta(true)
+        setTimeout(() => setShowChoices(true), 300)
+      }
     }
     typingRef.current = setTimeout(type, 500)
     return () => { if (typingRef.current) clearTimeout(typingRef.current) }
   }, [store.story.currentBranchId, store.story.currentStageIndex, currentStage])
 
-  useEffect(() => { if (textContainerRef.current) textContainerRef.current.scrollTop = textContainerRef.current.scrollHeight }, [displayText])
+  useEffect(() => {
+    if (textContainerRef.current) {
+      textContainerRef.current.scrollTop = textContainerRef.current.scrollHeight
+    }
+  }, [displayText])
 
   const handleSkip = useCallback(() => {
     if (typingRef.current) clearTimeout(typingRef.current)
-    setDisplayText(currentStage?.scene || ""); setShowMeta(true); setShowChoices(true); store.skipTyping()
+    setDisplayText(currentStage?.scene || "")
+    setShowMeta(true)
+    setShowChoices(true)
+    store.skipTyping()
   }, [currentStage, store])
 
-  const handleChoice = (choiceIndex: number) => { if (isLastStage) setIsComplete(true); store.makeChoice(choiceIndex) }
-  const handleViewReport = () => store.switchScreen("report")
-  const handleTryOther = () => {
-    const otherBranch = store.scenarioData?.branches.find((b) => !store.story.completedBranches.includes(b.id))
-    if (otherBranch) store.startStory(otherBranch.id)
+  const handleChoice = (choiceIndex: number) => {
+    if (isLastStage) setIsComplete(true)
+    store.makeChoice(choiceIndex)
   }
-  const branchProgress = branch.stages.length > 0 ? ((store.story.currentStageIndex + (isComplete ? 1 : 0)) / branch.stages.length) * 100 : 0
+
+  const handleViewReport = () => goTo("report")
+
+  const handleTryOther = () => {
+    const otherBranch = scenarioData?.branches.find((b) => !store.story.completedBranches.includes(b.id))
+    if (otherBranch) startStory(otherBranch.id)
+  }
+
+  if (!scenarioData || branchId === null) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-background">
+        <div className="text-text-secondary">请先选择一条路径</div>
+        <button
+          onClick={() => goTo("result")}
+          className="px-4 py-2 rounded-xl bg-accent/15 text-accent text-sm hover:bg-accent/25 transition-colors"
+        >
+          返回推演结果
+        </button>
+      </div>
+    )
+  }
+
+  if (!branch || !currentStage) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-background">
+        <div className="text-text-secondary">路径数据异常</div>
+        <button
+          onClick={() => goTo("result")}
+          className="px-4 py-2 rounded-xl bg-accent/15 text-accent text-sm hover:bg-accent/25 transition-colors"
+        >
+          返回推演结果
+        </button>
+      </div>
+    )
+  }
+
+  const branchProgress = branch.stages.length > 0
+    ? ((store.story.currentStageIndex + (isComplete ? 1 : 0)) / branch.stages.length) * 100
+    : 0
 
   return (
     <div className="h-screen flex flex-col bg-background overflow-hidden">
       <div className="glass-nav h-14 flex items-center justify-between px-4 shrink-0 z-20">
-        <button onClick={() => store.switchScreen("result")} className="flex items-center gap-2 text-text-secondary hover:text-text-primary transition-colors"><ArrowLeft className="w-5 h-5" /></button>
+        <button onClick={() => goTo("result")} className="flex items-center gap-2 text-text-secondary hover:text-text-primary transition-colors"><ArrowLeft className="w-5 h-5" /></button>
         <div className="flex items-center gap-2 text-sm"><GitFork className="w-4 h-4 text-accent" /><span className="text-text-secondary">{branch.name}</span><span className="text-text-muted">·</span><span className="text-text-muted">{store.story.currentStageIndex + 1}/{branch.stages.length}</span></div>
         <button onClick={handleViewReport} className="flex items-center gap-1.5 text-text-muted hover:text-accent transition-colors text-sm"><FileText className="w-4 h-4" /><span className="hidden sm:inline">报告</span></button>
       </div>
@@ -112,8 +161,8 @@ export default function StoryScreen() {
       <div className="flex-1 flex flex-col items-center overflow-y-auto px-4 py-6 gap-4">
         <AnimatePresence mode="wait">
           <motion.div key={`${store.story.currentBranchId}-${store.story.currentStageIndex}`} initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="flex items-center gap-3">
-            <span className="px-4 py-1.5 rounded-full bg-accent/15 text-accent text-xs font-medium border border-accent/20">{currentStage?.stage}</span>
-            <span className="flex items-center gap-1 text-xs text-text-muted"><Clock className="w-3 h-3" />{currentStage?.period}</span>
+            <span className="px-4 py-1.5 rounded-full bg-accent/15 text-accent text-xs font-medium border border-accent/20">{currentStage.stage}</span>
+            <span className="flex items-center gap-1 text-xs text-text-muted"><Clock className="w-3 h-3" />{currentStage.period}</span>
           </motion.div>
         </AnimatePresence>
 
@@ -142,7 +191,7 @@ export default function StoryScreen() {
               <button onClick={handleSkip} className="flex items-center gap-1.5 text-xs text-text-muted hover:text-accent transition-colors"><SkipForward className="w-3 h-3" />跳过</button>
             )}
             <AnimatePresence>
-              {showMeta && currentStage && (
+              {showMeta && (
                 <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="mt-4 pt-4 border-t border-border space-y-3">
                   <div className="flex items-start gap-2">
                     <Target className="w-4 h-4 text-success shrink-0 mt-0.5" />
@@ -163,7 +212,7 @@ export default function StoryScreen() {
         </AnimatePresence>
 
         <AnimatePresence>
-          {showChoices && !isComplete && currentStage && (
+          {showChoices && !isComplete && (
             <motion.div initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 40 }} transition={{ duration: 0.4, ease: easeSmooth }} className="w-full max-w-[800px] space-y-3">
               <p className="text-xs text-text-muted text-center mb-2">你的选择</p>
               {currentStage.choices.map((choice, index) => (
@@ -189,7 +238,7 @@ export default function StoryScreen() {
               <h3 className="text-lg font-semibold text-text-primary mb-2">「{branch.name}」体验完毕</h3>
               <p className="text-sm text-text-secondary mb-6">你的选择展现了{store.story.history[store.story.history.length - 1]?.personality || "独特"}的特质</p>
               <div className="flex gap-3 justify-center">
-                {store.scenarioData?.branches.some((b) => !store.story.completedBranches.includes(b.id)) && (
+                {scenarioData.branches.some((b) => !store.story.completedBranches.includes(b.id)) && (
                   <button onClick={handleTryOther} className="px-5 py-2.5 rounded-xl border border-border text-text-primary text-sm font-medium hover:bg-background-elevated transition-colors">体验其他路线</button>
                 )}
                 <button onClick={handleViewReport} className="px-5 py-2.5 rounded-xl bg-accent text-[#E2E8F0] text-sm font-medium hover:bg-accent-hover transition-colors">查看报告</button>

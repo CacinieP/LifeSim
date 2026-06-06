@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react"
 import { motion } from "framer-motion"
 import { ArrowLeft, ArrowRight, CheckCircle2, AlertTriangle, Lightbulb, Target, GitFork, Shield, Rocket, RefreshCw, TrendingUp, Clock, MapPin, Sparkles } from "lucide-react"
 import { useLifeSimStore } from "@/store/useLifeSimStore"
+import { useLifeSimNavigation } from "@/hooks/useLifeSimNavigation"
 import type { Branch, StoryHistoryEntry } from "@/types"
 
 const easeSmooth = [0.16, 1, 0.3, 1] as [number, number, number, number]
@@ -62,7 +63,21 @@ function RadarChart({ branches }: { branches: { name: string; scores: Record<str
 
 export default function ReportScreen() {
   const store = useLifeSimStore()
-  if (!store.scenarioData) return <div className="min-h-screen flex items-center justify-center bg-background"><div className="text-text-secondary">暂无报告数据</div></div>
+  const { goTo, restart } = useLifeSimNavigation()
+
+  if (!store.scenarioData) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-background">
+        <div className="text-text-secondary">暂无报告数据</div>
+        <button
+          onClick={() => goTo("result")}
+          className="px-4 py-2 rounded-xl bg-accent/15 text-accent text-sm hover:bg-accent/25 transition-colors"
+        >
+          返回推演结果
+        </button>
+      </div>
+    )
+  }
 
   const { userSummary, researchSummary, branches, recommendation, disclaimer } = store.scenarioData
   const userChoicesByBranch = branches.map((branch: Branch) => ({ branch, history: store.story.history.filter((h: StoryHistoryEntry) => h.branchId === branch.id) }))
@@ -71,7 +86,7 @@ export default function ReportScreen() {
     <div className="min-h-screen bg-background px-4 py-8 pb-12">
       <div className="max-w-[800px] mx-auto">
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-3 mb-8">
-          <button onClick={() => store.switchScreen("story")} className="flex items-center gap-2 text-text-secondary hover:text-text-primary transition-colors"><ArrowLeft className="w-5 h-5" /></button>
+          <button onClick={() => goTo(store.story.currentBranchId !== null ? "story" : "result")} className="flex items-center gap-2 text-text-secondary hover:text-text-primary transition-colors"><ArrowLeft className="w-5 h-5" /></button>
           <h1 className="text-2xl font-bold text-text-primary">你的决策报告</h1>
         </motion.div>
 
@@ -167,7 +182,7 @@ export default function ReportScreen() {
           <motion.p variants={itemVariants} className="text-xs text-text-muted text-center py-4">{disclaimer}</motion.p>
 
           <motion.div variants={itemVariants} className="flex justify-center pb-8">
-            <button onClick={() => store.switchScreen("welcome")} className="flex items-center gap-2 px-6 py-3 bg-background-elevated text-text-primary rounded-xl text-sm font-medium hover:bg-background-card border border-border hover:border-border-focus transition-all">
+            <button onClick={restart} className="flex items-center gap-2 px-6 py-3 bg-background-elevated text-text-primary rounded-xl text-sm font-medium hover:bg-background-card border border-border hover:border-border-focus transition-all">
               <ArrowLeft className="w-4 h-4" />重新开始
             </button>
           </motion.div>

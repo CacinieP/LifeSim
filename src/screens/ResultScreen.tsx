@@ -1,17 +1,12 @@
-import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import { Sparkles, TrendingUp, AlertTriangle, ArrowRight, CheckCircle2 } from "lucide-react"
 import EnergyBar from "@/components/ui-custom/EnergyBar"
 import { useLifeSimStore } from "@/store/useLifeSimStore"
+import { useLifeSimNavigation } from "@/hooks/useLifeSimNavigation"
 
 export default function ResultScreen() {
   const store = useLifeSimStore()
-  const [animateScores, setAnimateScores] = useState(false)
-
-  useEffect(() => {
-    const t = setTimeout(() => setAnimateScores(true), 800)
-    return () => clearTimeout(t)
-  }, [])
+  const { goTo, startStory } = useLifeSimNavigation()
 
   if (!store.scenarioData) {
     return (
@@ -28,7 +23,7 @@ export default function ResultScreen() {
       <div className="sticky top-0 z-50 px-6 py-4" style={{ background: "rgba(6, 6, 13, 0.85)", backdropFilter: "blur(16px)", borderBottom: "1px solid rgba(255, 255, 255, 0.06)" }}>
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <h1 className="text-lg font-semibold text-[#E2E8F0]">推演结果</h1>
-          <button onClick={() => store.switchScreen("report")} className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-medium transition-all hover:scale-105" style={{ background: "linear-gradient(135deg, rgba(0, 229, 255, 0.15), rgba(157, 78, 221, 0.15))", border: "1px solid rgba(0, 229, 255, 0.3)", color: "#00E5FF" }}>
+          <button onClick={() => goTo("report")} className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-medium transition-all hover:scale-105" style={{ background: "linear-gradient(135deg, rgba(0, 229, 255, 0.15), rgba(157, 78, 221, 0.15))", border: "1px solid rgba(0, 229, 255, 0.3)", color: "#00E5FF" }}>
             查看报告
           </button>
         </div>
@@ -67,7 +62,7 @@ export default function ResultScreen() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {branches.map((branch, i) => (
               <motion.div key={branch.id} initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.3 + i * 0.1 }}
-                onClick={() => store.startStory(branch.id)}
+                onClick={() => startStory(branch.id)}
                 className="rounded-2xl p-6 cursor-pointer transition-all hover:scale-[1.01] relative overflow-hidden"
                 style={{ background: "rgba(16, 20, 36, 0.4)", backdropFilter: "blur(12px)", border: "1px solid rgba(255, 255, 255, 0.1)" }}>
                 {branch.id === recommendation.primaryId && (
