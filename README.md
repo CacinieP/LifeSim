@@ -7,7 +7,7 @@ sdk: docker
 app_file: app.py
 app_port: 7860
 pinned: false
-license: mit
+license: apache-2.0
 short_description: AI 驱动的重大人生决策辅助工具，支持对话推演与场景可视化
 tags:
   - life-simulation
