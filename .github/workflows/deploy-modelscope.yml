@@ -34,7 +34,6 @@ jobs:
           fi
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          chmod +x start.sh
           git add -f dist README.md
           if ! git diff --staged --quiet; then
             git commit -m "chore: bundle dist for ModelScope studio runtime [skip ci]"
@@ -42,4 +41,7 @@ jobs:
           git remote add modelscope "https://oauth2:${MODELSCOPE_TOKEN}@www.modelscope.cn/studios/Cacinie/LifeSim.git" || true
           git fetch modelscope master
           git push modelscope HEAD:master
-
+          curl -s -X POST "https://modelscope.cn/openapi/v1/studios/Cacinie/LifeSim/deploy" \
+            -H "Authorization: Bearer ${MODELSCOPE_TOKEN}" \
+            -H "Content-Type: application/json"
+

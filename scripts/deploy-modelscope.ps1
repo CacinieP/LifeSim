@@ -1,16 +1,43 @@
 param(
   [Parameter(Mandatory = $true)]
-  [string]$Token
+  [string]$Token,
+  [string]$Owner = "Cacinie",
+  [string]$Repo = "LifeSim"
 )
 
-$remote = "https://oauth2:$Token@www.modelscope.cn/studios/Cacinie/LifeSim.git"
+$ErrorActionPreference = "Stop"
+$remote = "https://oauth2:$Token@www.modelscope.cn/studios/$Owner/$Repo.git"
+
+Write-Host "[LifeSim] 使用 MODELSCOPE=true 构建前端..."
+$env:MODELSCOPE = "true"
+npm run build
+if (-not (Test-Path "dist/index.html")) {
+  throw "dist/index.html 不存在，构建失败"
+}
 
 git remote remove modelscope 2>$null
 git remote add modelscope $remote
-git push modelscope HEAD:master --force
+git fetch modelscope master 2>$null
+git merge modelscope/master --allow-unrelated-histories -m "Merge ModelScope remote" 2>$null
 
-Write-Host "已推送到 ModelScope 创空间。"
-Write-Host "请打开 https://www.modelscope.cn/studios/Cacinie/LifeSim/summary"
-Write-Host "1. 确认设置中 SDK 类型为 Static（与 README 一致）"
-Write-Host "2. 点击「部署」或「重启空间展示」"
-Write-Host "3. 在构建日志中确认 npm run build 成功后再访问"
+git add -f dist README.md vite.config.ts
+git diff --staged --quiet
+if ($LASTEXITCODE -ne 0) {
+  git commit -m "chore: update dist for ModelScope static deploy"
+}
+
+git push -u modelscope HEAD:master
+if ($LASTEXITCODE -ne 0) {
+  throw "git push 失败"
+}
+
+Write-Host "[LifeSim] 触发创空间部署 API..."
+$deploy = curl.exe -s -X POST `
+  "https://modelscope.cn/openapi/v1/studios/$Owner/$Repo/deploy" `
+  -H "Authorization: Bearer $Token" `
+  -H "Content-Type: application/json"
+Write-Host $deploy
+
+Write-Host ""
+Write-Host "已推送到 https://www.modelscope.cn/studios/$Owner/$Repo/summary"
+Write-Host "Static 模式无构建日志属正常。等待 1-2 分钟后访问体验页。"
