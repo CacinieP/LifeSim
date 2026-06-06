@@ -4,7 +4,7 @@ emoji: 🎯
 colorFrom: indigo
 colorTo: blue
 sdk: docker
-app_file: app.py
+app_file: start.sh
 app_port: 7860
 pinned: false
 license: apache-2.0

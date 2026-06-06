@@ -30,5 +30,8 @@ async def static_or_spa(path: str) -> FileResponse:
 
 
 if __name__ == "__main__":
+    if not (DIST / "index.html").is_file():
+        raise SystemExit(f"Missing frontend build: {DIST / 'index.html'}")
     port = int(os.environ.get("PORT", 7860))
+    print(f"[LifeSim] serving {DIST} on 0.0.0.0:{port}", flush=True)
     uvicorn.run(app, host="0.0.0.0", port=port)

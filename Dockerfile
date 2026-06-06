@@ -16,10 +16,12 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY app.py .
+COPY app.py start.sh ./
 COPY --from=frontend-builder /app/dist ./dist
+
+RUN chmod +x start.sh
 
 ENV PORT=7860
 EXPOSE 7860
 
-CMD ["python", "app.py"]
+CMD ["./start.sh"]
