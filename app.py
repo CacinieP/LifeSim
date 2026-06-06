@@ -12,6 +12,9 @@ DIST = Path(__file__).parent / "dist"
 if (DIST / "assets").exists():
     app.mount("/assets", StaticFiles(directory=DIST / "assets"), name="assets")
 
+if (DIST / "images").exists():
+    app.mount("/images", StaticFiles(directory=DIST / "images"), name="images")
+
 
 @app.get("/")
 async def index() -> FileResponse:
