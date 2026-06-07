@@ -115,7 +115,7 @@ export async function generateImage(apiConfig: ApiConfig, prompt: string): Promi
   const body: Record<string, unknown> = {
     model,
     prompt: prompt.slice(0, 500),
-    response_format: "url",
+    response_format: "b64_json",
     size: "1024x1024",
     n: 1,
   }

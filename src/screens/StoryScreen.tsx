@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { ArrowLeft, Clock, MapPin, CheckCircle2, ChevronUp, ChevronDown, SkipForward, FileText, GitFork, Target, ListTodo } from "lucide-react"
+import { ArrowLeft, Clock, MapPin, CheckCircle2, ChevronUp, ChevronDown, SkipForward, FileText, GitFork, Target, ListTodo, ImageOff } from "lucide-react"
 import { useLifeSimStore } from "@/store/useLifeSimStore"
 import { useLifeSimNavigation } from "@/hooks/useLifeSimNavigation"
 import { generateImage } from "@/lib/api"
@@ -16,6 +16,7 @@ export default function StoryScreen() {
   const [showMeta, setShowMeta] = useState(false)
   const [isComplete, setIsComplete] = useState(false)
   const [imageLoaded, setImageLoaded] = useState(false)
+  const [imageError, setImageError] = useState(false)
   const [stageImageUrl, setStageImageUrl] = useState<string | null>(null)
   const [isGeneratingImage, setIsGeneratingImage] = useState(false)
   const imageCacheRef = useRef<Record<string, string>>({})
@@ -34,6 +35,7 @@ export default function StoryScreen() {
     const cacheKey = `${store.story.currentBranchId}-${store.story.currentStageIndex}`
     setStageImageUrl(null)
     setImageLoaded(false)
+    setImageError(false)
 
     if (currentStage.imageUrl) {
       setStageImageUrl(currentStage.imageUrl)
@@ -169,12 +171,18 @@ export default function StoryScreen() {
         <AnimatePresence mode="wait">
           <motion.div key={`cg-${store.story.currentBranchId}-${store.story.currentStageIndex}`} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.98 }} transition={{ duration: 0.5, ease: easeSmooth }}
             className="relative w-full max-w-[900px] aspect-video rounded-2xl overflow-hidden shadow-2xl shadow-black/50">
-            {(isGeneratingImage || (stageImageUrl && !imageLoaded)) && <div className="absolute inset-0 shimmer" />}
+            {(isGeneratingImage || (stageImageUrl && !imageLoaded && !imageError)) && <div className="absolute inset-0 shimmer" />}
             {isGeneratingImage && !stageImageUrl && (
               <div className="absolute inset-0 flex items-center justify-center text-xs text-text-muted">正在生成场景图...</div>
             )}
-            {stageImageUrl && (
-              <img src={stageImageUrl} alt={currentStage.stage} className="w-full h-full object-cover" onLoad={() => setImageLoaded(true)} />
+            {imageError && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-xs text-text-muted bg-background/40">
+                <ImageOff className="w-8 h-8 opacity-50" />
+                <span>场景图加载失败</span>
+              </div>
+            )}
+            {stageImageUrl && !imageError && (
+              <img src={stageImageUrl} alt={currentStage.stage} className="w-full h-full object-cover" onLoad={() => setImageLoaded(true)} onError={() => { setImageLoaded(true); setImageError(true); }} />
             )}
             <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-background/60 to-transparent" />
           </motion.div>
